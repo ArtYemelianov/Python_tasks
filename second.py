@@ -1,60 +1,102 @@
 #!/usr/bin/python3.6
-import re
+import re, datetime
+
 
 class AbonentFormatException(Exception):
     pass
 
-def compose_abonent(*args):
+
+def compose_abonent(number, balance):
     """
     Composes abonent
 
     :param str number: Number of abonent
-    :param str bill: Active bill
-    :param str incoming: Duration of incoming calls
-    :param str outcoming: Duration of outcoming calls
-    :param str last_cash: Last sum of cash that done
-    :param str last_payment: Date of last payment
+    :param str balance: Balance
     :return: Composed dictionary of abonent
     :rtype: dict
     """
     abonent = {}
-    if not args[0] or not re.match("^[+|\d]\d+$",args[0].strip()):
+    if not number or not re.match("^[+|\d]\d+$", number):
         raise AbonentFormatException("Number has to have only + and digit numbers")
-    if not args[1] or not re.match("^\d+$",args[1].strip()):
-        raise AbonentFormatException("Bill must be int")
-    if not args[2] or not re.match("^\d+$",  args[2].strip()):
-        raise AbonentFormatException("Incoming duration must be int")
-    if not args[3] or not re.match("^\d+$",  args[3].strip()):
-        raise AbonentFormatException("Outcoming duration must be int")
-    if not args[4] or not re.match("^\d+$",  args[4].strip()):
-        raise AbonentFormatException("Last cash must be int")
-    if not args[5] or not re.match("^[\d|\.]+$",  args[5].strip()):
-        raise AbonentFormatException("Last payment must be int")
-    abonent['number'] = args[0]
-    abonent['bill'] = int(args[1].strip())
-    abonent['incoming'] = int(args[2].strip())
-    abonent['outcoming'] = int(args[3].strip())
-    abonent['last_cash'] = int(args[4].strip())
-    abonent['last_payment'] = args[5].strip()
+    if not balance or not re.match("^\d+[\.|\d]*\d*$", balance):
+        raise AbonentFormatException("Balance must be float or int")
+    abonent['number'] = number
+    abonent['balance'] = float(balance)
     return abonent
 
+def create_abonent_flow():
+    """
+    Creates initial abonent
+
+    :return: If abonent create - dict. Otherwise - None
+    :rtype: dict|None
+    """
+    while True:
+        inputted_data = input("Input through space next fields: number and current balance")
+        if not inputted_data or len(inputted_data) == 0:
+            print("Inputted data are empty. Try again!")
+            continue
+        ls = inputted_data.strip().split(" ")
+        if len(ls) != 2:
+            print("Amount of fields should match with initial data above. Try again!")
+            continue
+        try:
+            return compose_abonent(number=ls[0].strip(), balance=ls[1].strip())
+        except AbonentFormatException as e:
+            print("Error ", e.args[0])
+            continue
+
+def show_info(abonent):
+    print("You can use next commands: \n"
+          "     'q' - quit\n"
+          "     'in' - make incoming call.\n"
+          "     'out' - make outcoming call. Tariff is 1 pseudo balance for 1 minute \n"
+          "     'add' - replenish account\n"
+          "     'show' - show info about abonent\n"
+          "     Abonent info %s \n" % abonent)
+
+def handle_outcoming(abonent, duration):
+    if abonent['balance'] < duration:
+        print("You haven't enough money to originate call")
+        return
+    if 'outcoming' not in abonent: abonent['outcoming'] = 0
+    abonent['outcoming'] += duration
+    abonent['balance'] -= duration
+
+def handle_incoming(abonent, duration):
+    if 'incoming' not in abonent: abonent['incoming'] = 0
+    abonent['incoming'] += duration
+
+def handle_replishment_balance(abonent, money):
+    if money <= 0:
+        print("Value is not less than 0")
+        return
+    abonent['balance'] += money
+    abonent['last_payment'] = str(datetime.datetime.now())
+
+
 print("Hi, this program leads calculation for ATC abonent")
-
-while True:
-    inputted_data = input("Input through comma next fields: number, current balance, incoming duration, outcoming duration, last cash and last date payment:\n")
-    if not inputted_data or len(inputted_data) == 0:
-        print("Inputted data are empty. Try again!")
-        continue
-    ls = inputted_data.split(",")
-    if len(ls) != 6:
-        print("Amount of fields should match with initial data above. Try again!")
-        continue
+abonent = create_abonent_flow()
+if not abonent:
+    pass
+else:
+    show_info(abonent)
     try:
-        abonent = compose_abonent(*ls)
-        break
-    except AbonentFormatException as e:
-        print("Error ", e.args[0])
-        continue
-
-print("Your abonent is %s" % abonent)
-
+        while True:
+            command = input("Your command is ")
+            if command == 'q':
+                print("Good luck")
+                break
+            elif command == 'out':
+                duration = int(input("Input duration of call: "))
+                handle_outcoming(abonent, duration)
+            elif command == 'in':
+                duration = int(input("Input duration of call: "))
+                handle_incoming(abonent, duration)
+            elif command == 'add':
+                money = float(input("How many money do you want to spend? "))
+                handle_replishment_balance(abonent, money)
+            elif command == 'show':
+                show_info(abonent)
+    except ValueError as e:
+        print("Error. Format of inputted data not valid. Try again!")
