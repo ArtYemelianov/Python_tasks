@@ -59,13 +59,11 @@ def handle_outcoming(abonent, duration):
     if abonent['balance'] < duration:
         print("You haven't enough money to originate call")
         return
-    if 'outcoming' not in abonent: abonent['outcoming'] = 0
-    abonent['outcoming'] += duration
+    abonent['outcoming'] = abonent.get('outcoming', 0) + duration
     abonent['balance'] -= duration
 
 def handle_incoming(abonent, duration):
-    if 'incoming' not in abonent: abonent['incoming'] = 0
-    abonent['incoming'] += duration
+    abonent['incoming'] = abonent.get('incoming', 0) + duration
 
 def handle_replishment_balance(abonent, money):
     if money <= 0:
@@ -81,8 +79,8 @@ if not abonent:
     pass
 else:
     show_info(abonent)
-    try:
-        while True:
+    while True:
+        try:
             command = input("Your command is ")
             if command == 'q':
                 print("Good luck")
@@ -98,5 +96,5 @@ else:
                 handle_replishment_balance(abonent, money)
             elif command == 'show':
                 show_info(abonent)
-    except ValueError as e:
-        print("Error. Format of inputted data not valid. Try again!")
+        except ValueError as e:
+            print("Error. Format of inputted data not valid. Try again!")
